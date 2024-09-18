@@ -1,13 +1,12 @@
 #-------------------------------------------------------------------------
 # AUTHOR: Sean Archer
-# FILENAME: title of the source file
+# FILENAME: indexing.py
 # SPECIFICATION: description of the program
 # FOR: CS 5180- Assignment #1
 # TIME SPENT: how long it took you to complete the assignment
 #-----------------------------------------------------------*/
 
 
-#Importing some Python libraries
 import csv
 import math
 
@@ -41,18 +40,45 @@ def create_index():
         index_terms = index_terms.union(create_index_terms_set(document, stop_words, stemming))
 
     #Building the document-term matrix by using the tf-idf weights.
-    doc_term_matrix = []
+    term_doc_tf_idf_map = dict()
     for term in index_terms:
         idf = generate_idf(formatted_documents, term)
-        row = {term: []}
+        row = []
         for document in formatted_documents:
             tf = generate_tf(document, term)
-            row[term].append(tf*idf)
-        doc_term_matrix.append(row)
+            row.append(tf * idf)
+        term_doc_tf_idf_map[term] = row
+
+    doc_term_matrix = formatted_doc_term_matrix(index_terms, term_doc_tf_idf_map, len(documents))
+    for row in doc_term_matrix:
+        print(row)
 
     #Printing the document-term matrix.
-    for term in doc_term_matrix:
-        print(term)
+    # for term in term_doc_tf_idf_map:
+    #     print(term, term_doc_tf_idf_map[term])
+
+
+def formatted_doc_term_matrix(index_terms, tf_idf_term_doc_mapping, number_of_documents):
+    doc_term_matrix = list()
+    index_term_values = formatted_index_terms(index_terms)
+    doc_term_matrix.append(index_term_values)
+
+    for i in range(number_of_documents):
+        document_row = dict()
+        weight_values = []
+        for term in index_terms:
+            value = round(tf_idf_term_doc_mapping[term][i], 3)
+            weight_values.append(value)
+        document_row["d" + str(i)] = weight_values
+        doc_term_matrix.append(document_row)
+
+    return doc_term_matrix
+
+
+def formatted_index_terms(index_terms):
+    column_names = [term for term in index_terms]
+    index_term_values = {"-" : column_names}
+    return index_term_values
 
 
 def format_document(document, stop_words, stemming_dictionary):
