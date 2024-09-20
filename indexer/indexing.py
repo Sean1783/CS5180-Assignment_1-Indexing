@@ -1,9 +1,9 @@
 #-------------------------------------------------------------------------
 # AUTHOR: Sean Archer
 # FILENAME: indexing.py
-# SPECIFICATION: description of the program
+# SPECIFICATION: Creates and displays the document-term matrix for a set of documents.
 # FOR: CS 5180- Assignment #1
-# TIME SPENT: how long it took you to complete the assignment
+# TIME SPENT: 6 hours.
 #-----------------------------------------------------------*/
 
 
@@ -14,121 +14,95 @@ import math
 def create_index():
     documents = []
 
-    #Reading the data in a csv file
     with open('collection.csv', 'r') as csvfile:
       reader = csv.reader(csvfile)
       for i, row in enumerate(reader):
              if i > 0:  # skipping the header
                 documents.append (row[0])
 
-    #Conducting stopword removal for pronouns/conjunctions. Hint: use a set to define your stopwords.
     stop_words = ('the', 'to', 'and', 'a', 'They', 'her', 'I', 'She', 'their')
 
-    #Conducting stemming. Hint: use a dictionary to map word variations to their stem.
     stemming = {'loves' : 'love',
-                'dogs' : 'dog',
-                'cats' : 'cat',
+                'cats': 'cat',
+                'dogs' : 'dog'
                 }
 
-    formatted_documents = []
-    for document in documents:
-        formatted_documents.append(format_document(document, stop_words, stemming))
+    transformed_document_collection = transform_document_collection(documents, stop_words, stemming)
+    terms = []
+    create_index_terms_list(transformed_document_collection, terms)
 
-    #Identifying the index terms.
-    index_terms = set()
-    for document in formatted_documents:
-        index_terms = index_terms.union(create_index_terms_set(document, stop_words, stemming))
+    docTermMatrix = [[] for _ in range(len(documents))]
 
-    #Building the document-term matrix by using the tf-idf weights.
-    term_doc_tf_idf_map = dict()
-    for term in index_terms:
-        idf = generate_idf(formatted_documents, term)
-        row = []
-        for document in formatted_documents:
+    for term in terms:
+        idf = generate_idf(transformed_document_collection, term)
+        doc_index = 0
+        for document in transformed_document_collection:
             tf = generate_tf(document, term)
-            row.append(tf * idf)
-        term_doc_tf_idf_map[term] = row
+            tf_idf = tf*idf
+            docTermMatrix[doc_index].append(round(tf_idf, 3))
+            doc_index += 1
 
-    doc_term_matrix = formatted_doc_term_matrix(index_terms, term_doc_tf_idf_map, len(documents))
-    for row in doc_term_matrix:
+    document_titles = ["d" + str(i+1) for i in range(len(documents))]
+    print_2d_table(terms, document_titles, docTermMatrix)
+
+
+def print_2d_table(terms, doc_titles, data):
+    col_width = max(len(str(item)) for row in [terms] + data for item in row) + 4
+    row_label_width = max(len(str(label)) for label in doc_titles) + 4
+    print(" " * row_label_width + "".join(f"{header:<{col_width}}" for header in terms))
+    for i, row_label in enumerate(doc_titles):
+        row = f"{row_label:<{row_label_width}}" + "".join(f"{item:<{col_width}}" for item in data[i])
         print(row)
 
-    #Printing the document-term matrix.
-    # for term in term_doc_tf_idf_map:
-    #     print(term, term_doc_tf_idf_map[term])
+
+def create_index_terms_list(transformed_doc_collection, index_list):
+    for document in transformed_doc_collection:
+        for term in document:
+            if term not in index_list:
+                index_list.append(term)
 
 
-def formatted_doc_term_matrix(index_terms, tf_idf_term_doc_mapping, number_of_documents):
-    doc_term_matrix = list()
-    index_term_values = formatted_index_terms(index_terms)
-    doc_term_matrix.append(index_term_values)
-
-    for i in range(number_of_documents):
-        document_row = dict()
-        weight_values = []
-        for term in index_terms:
-            value = round(tf_idf_term_doc_mapping[term][i], 3)
-            weight_values.append(value)
-        document_row["d" + str(i)] = weight_values
-        doc_term_matrix.append(document_row)
-
-    return doc_term_matrix
-
-
-def formatted_index_terms(index_terms):
-    column_names = [term for term in index_terms]
-    index_term_values = {"-" : column_names}
-    return index_term_values
-
-
-def format_document(document, stop_words, stemming_dictionary):
-    split_text = document.split(' ')
-    formatted_document = []
-
-    for word in split_text:
-        if word not in stop_words:
-            if word in stemming_dictionary:
-                formatted_document.append(stemming_dictionary[word])
+def transform_document(document, stop_word_set, stem_map):
+    source_document = document.split(' ')
+    transformed_document = []
+    for i in range(len(source_document)):
+        if source_document[i] not in stop_word_set:
+            if source_document[i] in stem_map:
+                transformed_document.append(stem_map[source_document[i]])
             else:
-                formatted_document.append(word)
-
-    return formatted_document
-
-
-def create_index_terms_set(formatted_document, stop_words, stemming_dictionary):
-    document_terms = set()
-    for word in formatted_document:
-        if word not in stop_words:
-            if word in stemming_dictionary:
-                document_terms.add(stemming_dictionary[word])
-            else:
-                document_terms.add(word)
-    return document_terms
+                transformed_document.append(source_document[i])
+    return transformed_document
 
 
-def generate_tf(formatted_document, term):
+def transform_document_collection(documents, stemming, stop_words):
+    transformed_collection = []
+    for document in documents:
+        transformed_collection.append(transform_document(document, stemming, stop_words))
+    return transformed_collection
+
+
+def generate_tf(transformed_document, term):
     raw_frequency_count = 0
-    for word in formatted_document:
+    for word in transformed_document:
         if word == term:
             raw_frequency_count += 1
-    return raw_frequency_count / len(formatted_document)
+    return raw_frequency_count / len(transformed_document)
 
 
-def document_term_frequency(formatted_document, term):
-    if term in formatted_document:
+def document_term_frequency(transformed_document, term):
+    if term in transformed_document:
         return 1
     else:
         return 0
 
 
-def generate_total_dtf(formatted_documents, term):
+def generate_total_dtf(transformed_documents, term):
     total_dtf = 0
-    for document in formatted_documents:
+    for document in transformed_documents:
         total_dtf = total_dtf + document_term_frequency(document, term)
     return total_dtf
 
 
-def generate_idf(formatted_documents, term):
-    total_dtf = generate_total_dtf(formatted_documents, term)
-    return math.log((len(formatted_documents) / total_dtf), 10)
-
+def generate_idf(transformed_documents, term):
+    total_dtf = generate_total_dtf(transformed_documents, term)
+    return math.log((len(transformed_documents) / total_dtf), 10)
