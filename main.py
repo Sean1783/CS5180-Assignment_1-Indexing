@@ -1,6 +1,6 @@
-from indexer.indexing import create_index
+from indexer.indexing import create_and_print_document_term_matrix
 
 
 if __name__ == '__main__':
-    create_index()
+    create_and_print_document_term_matrix()
 

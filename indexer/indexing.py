@@ -11,7 +11,7 @@ import csv
 import math
 
 
-def create_index():
+def create_and_print_document_term_matrix():
     documents = []
 
     with open('collection.csv', 'r') as csvfile:
@@ -39,7 +39,7 @@ def create_index():
         for document in transformed_document_collection:
             tf = generate_tf(document, term)
             tf_idf = tf*idf
-            docTermMatrix[doc_index].append(round(tf_idf, 3))
+            docTermMatrix[doc_index].append(tf_idf)
             doc_index += 1
 
     document_titles = ["d" + str(i+1) for i in range(len(documents))]
@@ -51,7 +51,7 @@ def print_2d_table(terms, doc_titles, data):
     row_label_width = max(len(str(label)) for label in doc_titles) + 4
     print(" " * row_label_width + "".join(f"{header:<{col_width}}" for header in terms))
     for i, row_label in enumerate(doc_titles):
-        row = f"{row_label:<{row_label_width}}" + "".join(f"{item:<{col_width}}" for item in data[i])
+        row = f"{row_label:<{row_label_width}}" + "".join(f"{item:.3f} ".ljust(col_width) for item in data[i])
         print(row)
 
 
@@ -83,7 +83,6 @@ def transform_document_collection(documents, stop_words, stemming):
 
 def generate_tf(transformed_document, term):
     assert len(transformed_document) > 0
-
     raw_frequency_count = 0
     for word in transformed_document:
         if word == term:
