@@ -74,14 +74,16 @@ def transform_document(document, stop_word_set, stem_map):
     return transformed_document
 
 
-def transform_document_collection(documents, stemming, stop_words):
+def transform_document_collection(documents, stop_words, stemming):
     transformed_collection = []
     for document in documents:
-        transformed_collection.append(transform_document(document, stemming, stop_words))
+        transformed_collection.append(transform_document(document, stop_words, stemming))
     return transformed_collection
 
 
 def generate_tf(transformed_document, term):
+    assert len(transformed_document) > 0
+
     raw_frequency_count = 0
     for word in transformed_document:
         if word == term:
@@ -105,4 +107,5 @@ def generate_total_dtf(transformed_documents, term):
 
 def generate_idf(transformed_documents, term):
     total_dtf = generate_total_dtf(transformed_documents, term)
+    assert total_dtf > 0
     return math.log((len(transformed_documents) / total_dtf), 10)
